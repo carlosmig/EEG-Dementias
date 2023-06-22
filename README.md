@@ -21,6 +21,7 @@ Physics & Engineering Express, 8(4), 045014.
 # Files
 
 *JansenRitModelMulti.py* : base model.
+
 *runJR.py* : example script to run a whole-brain simulation.
 
 
