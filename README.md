@@ -24,6 +24,6 @@ Physics & Engineering Express, 8(4), 045014.
 
 *runJR.py* : example script to run a whole-brain simulation.
 
-
+*metaconnectivity.py* : compute metaconnectivity matrices.
 
 
