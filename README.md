@@ -26,4 +26,4 @@ Physics & Engineering Express, 8(4), 045014.
 
 *metaconnectivity.py* : compute metaconnectivity matrices.
 
-
+*SVM_REG.py* : toy example of a Support Vector Machine Regression for computing Brain Age Gaps from Functional Connectivity Data.
