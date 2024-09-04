@@ -179,9 +179,12 @@ for k in range(0,reps):
         test_pool_reps.append(test)
         Y_pred_pool_reps.append(Y_pred)    
         
-        ###Calculating BAGs
-        gap_train = Y_pred - Y_test
-        a,b = stats.linregress(Y_test, gap_train)[0:2]
+        # Predict on training data to compute BAGs for training set
+        Y_pred_train = regr.predict(X_pool_train.T)
+        gap_train = Y_pred_train - Y_train  # BAGs for training data
+        
+        # Apply linear regression to compute a and b
+        a, b = stats.linregress(Y_train, gap_train)[:2]
         
         ###TEST G1 USING BOTH
         X_test_G1 = vectorized_G1[corr_vec_pool_idx,:]
