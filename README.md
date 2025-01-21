@@ -1,6 +1,7 @@
 # EEG-Dementias
 
 This repository contains code for simulations related to the studies:
+
 **"Viscous dynamics associated with hypoexcitation and structural disintegration in neurodegeneration via generative whole-brain modeling."**
 
 **"Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia."**
@@ -20,7 +21,7 @@ We utilize a modified version of the Jansen & Rit model [1], incorporating inhib
 - **`Metaconnectivity`** : Scripts for computing metaconnectivity matrices.
 - **`SVM and FC matrices`** : Implementation of SVM models and brain age gap estimation using functional connectivity.
 - **`JR model and running example`** : Guide to running a Jansen-Rit EEG simulation.
-- **`JR Model Tutorial`** : Comprehensive tutorial on using and understanding the Jansen-Rit model.
+- **`JR Model Tutorial`** : Basic tutorial on using and understanding the Jansen-Rit model.
 
 ## License
 
