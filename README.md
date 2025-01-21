@@ -2,6 +2,7 @@
 
 This repository contains code for simulations related to the studies:
 **"Viscous dynamics associated with hypoexcitation and structural disintegration in neurodegeneration via generative whole-brain modeling."**
+
 **"Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia."**
 
 We utilize a modified version of the Jansen & Rit model [1], incorporating inhibitory synaptic plasticity [2] and contributions from alpha and gamma neural masses [3].
