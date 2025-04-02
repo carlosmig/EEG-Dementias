@@ -103,16 +103,16 @@ e_reps = np.zeros(reps)  # Mean absolute error results
 
 Y = SVM_ages.copy()  # Target variable (ages)
 
-# Storage for test results
-test_pool_reps = []
-Y_pred_pool_reps = []
-
 # Vectorize FC matrices using the upper triangular mask
 vectorized = (SVM_FCs[triu_idx,:].T * mask).T
 vectorized_north = (north_FCs[triu_idx,:].T * mask).T
 vectorized_south = (south_FCs[triu_idx,:].T * mask).T
 vectorized_AD = (AD_FCs[triu_idx,:].T * mask).T
 vectorized_FTD = (FTD_FCs[triu_idx,:].T * mask).T
+
+# Storage for test results
+Y_pred_pool_reps = np.zeros((vectorized.shape[1], n_splits, reps)) + np.nan 
+test_pool_reps = np.zeros((vectorized.shape[1], n_splits, reps)) + np.nan
 
 #%% Prepare storage for error and correlation analyses
 
@@ -160,9 +160,41 @@ for k in range(0, reps):
         regr.fit(X_pool_train.T, Y_train)    
         Y_pred = regr.predict(X_pool_test.T)
         
+        #age bias correction
+        gap_train = regr.predict(X_pool_train.T) - Y_train
+        a, b = stats.linregress(Y_train, gap_train)[0:2]
+        
         # Calculate error and correlation
         rtemp_pool.append(stats.pearsonr(Y_test, Y_pred)[0])  
         error_pool.append(np.mean(np.abs(Y_pred - Y_test)))
+        
+        # Test north
+        X_north = vectorized_north[corr_vec_pool_idx, :]
+        Y_pred_north = regr.predict(X_north.T)
+        gap_north[counter,k,:] = Y_pred_north - north_ages
+        gap_north[counter,k,:] = gap_north[counter,k,:] - (a * north_ages + b)
+        
+        # Test south
+        X_south = vectorized_south[corr_vec_pool_idx, :]
+        Y_pred_south = regr.predict(X_south.T)
+        gap_south[counter,k,:] = Y_pred_south - south_ages
+        gap_south[counter,k,:] = gap_south[counter,k,:] - (a * south_ages + b)
+        
+        # Test AD
+        X_AD = vectorized_AD[corr_vec_pool_idx, :]
+        Y_pred_AD = regr.predict(X_AD.T)
+        gap_AD[counter,k,:] = Y_pred_AD - AD_ages
+        gap_AD[counter,k,:] = gap_AD[counter,k,:] - (a * AD_ages + b)    
+        
+        # Test FTD
+        X_FTD = vectorized_FTD[corr_vec_pool_idx, :]
+        Y_pred_FTD = regr.predict(X_FTD.T)
+        gap_FTD[counter,k,:] = Y_pred_FTD - FTD_ages
+        gap_FTD[counter,k,:] = gap_FTD[counter,k,:] - (a * FTD_ages + b)
+
+        #store values for test
+        test_pool_reps[test,counter,k] = Y_test
+        Y_pred_pool_reps[test,counter,k] = (Y_pred)
 
         counter += 1
     
@@ -174,13 +206,18 @@ for k in range(0, reps):
 print(np.mean(rreps[:]))  # Average correlation
 print(np.mean(e_reps[:]))  # Average error
 
+#average gaps across repetitions and folds
+gap_south = np.nanmean(np.nanmean(gap_south,0),0)
+gap_north = np.nanmean(np.nanmean(gap_north,0),0)
+gap_AD = np.mean(np.mean(gap_AD,0),0)
+gap_FTD = np.mean(np.mean(gap_FTD,0),0)
+
+
 #%%
 ###PLOTTING
 
-Y_pred_all = np.zeros((np.sum(SVM_ages > 0),reps))  # Initialize array to store predicted ages
-for k in range(0,reps):
-    Y_pred_all[test_pool_reps[k],k] = Y_pred_pool_reps[k]  # Assign predicted values for each repetition
-Y_pred_all = np.sum(Y_pred_all,1) / np.sum(Y_pred_all > 0, 1)  # Compute the average prediction ignoring zeros
+Y_pred_all = np.nanmean(np.nanmean(Y_pred_pool_reps,1),1)  
+Y_test_all = np.nanmean(np.nanmean(test_pool_reps,1),1) 
 
 # Combined model visualization
 plt.figure(1, figsize = (5,4.5))
@@ -196,6 +233,7 @@ plt.title("Pearson's r = %.3f (cross validation)"%np.mean(rreps))  # Display cor
 
 plt.xlim(-10,110)
 plt.ylim(-10,110)
+
 
 ###Boxplot analysis of Brain Age Gap (BAG)
 
