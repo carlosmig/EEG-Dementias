@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn import svm
 import bct
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, GridSearchCV
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 import warnings
 warnings.filterwarnings('ignore')  # Ignore warnings to keep output clean
 
@@ -100,6 +101,7 @@ reps = 20  # Number of repetitions
 # Initialize arrays to store results
 rreps = np.zeros(reps)  # Correlation results
 e_reps = np.zeros(reps)  # Mean absolute error results
+rmse_reps = np.zeros(reps)
 
 Y = SVM_ages.copy()  # Target variable (ages)
 
@@ -114,19 +116,133 @@ vectorized_FTD = (FTD_FCs[triu_idx,:].T * mask).T
 Y_pred_pool_reps = np.zeros((vectorized.shape[1], n_splits, reps)) + np.nan 
 test_pool_reps = np.zeros((vectorized.shape[1], n_splits, reps)) + np.nan
 
-#%% Prepare storage for error and correlation analyses
+#%%
+#Nested cross-validation for hyper parameter tuning
 
+# Generate log-spaced C values between 0.01 and 10
+C_values = np.logspace(-2, 2, 11)
+C_values = np.insert(C_values, 6, 2)
+
+min_corr = 0.3  # Minimum correlation threshold
+
+# Results matrices
+n_inner_splits = n_splits  # Using the same number of splits for inner CV
+mae_matrix = np.zeros((reps, n_splits, n_inner_splits, len(C_values)))
+r_matrix = np.zeros((reps, n_splits, n_inner_splits, len(C_values)))
+rmse_matrix = np.zeros((reps, n_splits, n_inner_splits, len(C_values)))
+
+for k in range(reps):
+    # Outer loop for cross-validation
+    cv_outer = KFold(n_splits=n_splits, shuffle=True, random_state=k)
+    
+    outer_fold = 0  # To keep track of outer fold index
+    for train_idx, test_idx in cv_outer.split(Y, Y):
+        Y_train = Y[train_idx]
+
+        # Compute correlations and threshold values
+        corr_vec = np.array([stats.pearsonr(vectorized[x0, train_idx], Y_train)[0] for x0 in range(3321)])
+        corr_vec[np.isnan(corr_vec)] = 0
+        corr_vec_pool_idx = np.abs(corr_vec) >= min_corr
+        
+        X_pool_train = vectorized[corr_vec_pool_idx, :][:, train_idx]
+
+        # Inner loop for hyperparameter tuning
+        cv_inner = KFold(n_splits=n_inner_splits, shuffle=True, random_state=k)
+        
+        inner_fold = 0
+        for inner_train_idx, inner_test_idx in cv_inner.split(Y_train, Y_train):
+            Y_inner_train = Y_train[inner_train_idx]
+            Y_inner_test = Y_train[inner_test_idx]
+            X_inner_train = X_pool_train[:, inner_train_idx]
+            X_inner_test = X_pool_train[:, inner_test_idx]
+            
+            for c_idx, C in enumerate(C_values):
+                # Train the model
+                model = svm.SVR(max_iter=10000, C=C, kernel='poly', degree=2, epsilon=0.0001)
+                model.fit(X_inner_train.T, Y_inner_train)
+                Y_inner_pred = model.predict(X_inner_test.T)
+                
+                # Compute performance metrics
+                mae = mean_absolute_error(Y_inner_test, Y_inner_pred)
+                rmse = np.sqrt(mean_squared_error(Y_inner_test, Y_inner_pred))
+                r_value, _ = stats.pearsonr(Y_inner_test, Y_inner_pred)
+                
+                # Store the metrics
+                mae_matrix[k, outer_fold, inner_fold, c_idx] = mae
+                rmse_matrix[k, outer_fold, inner_fold, c_idx] = rmse
+                r_matrix[k, outer_fold, inner_fold, c_idx] = r_value
+            
+            inner_fold += 1
+        
+        print(f"Rep {k+1}, Outer Fold {outer_fold+1} completed.")
+        outer_fold += 1
+
+print("\nCompleted all repetitions.")
+
+#%%
+#Plotting best hyperparameter
+
+# Average across inner and outer folds
+mae_avg = np.mean(mae_matrix, axis=(1, 2))
+rmse_avg = np.mean(rmse_matrix, axis=(1, 2))
+r_avg = np.mean(r_matrix, axis=(1, 2))
+
+# Calculate overall averages across repetitions
+mae_overall_avg = np.mean(mae_avg, axis=0)
+rmse_overall_avg = np.mean(rmse_avg, axis=0)
+r_overall_avg = np.mean(r_avg, axis=0)
+
+# Find the best C for each metric (minimum for mae and rmse, maximum for r)
+best_mae_idx = np.argmin(mae_overall_avg)
+best_rmse_idx = np.argmin(rmse_overall_avg)
+best_r_idx = np.argmax(r_overall_avg)
+
+# Calculate percentage change relative to the best value
+percent_diff_mae = 100 * (mae_overall_avg - mae_overall_avg[best_mae_idx]) / mae_overall_avg[best_mae_idx]
+percent_diff_rmse = 100 * (rmse_overall_avg - rmse_overall_avg[best_rmse_idx]) / rmse_overall_avg[best_rmse_idx]
+percent_diff_r = 100 * (r_overall_avg - r_overall_avg[best_r_idx]) / r_overall_avg[best_r_idx]
+
+# Set the best index to 0 as requested
+percent_diff_mae[best_mae_idx] = 0
+percent_diff_rmse[best_rmse_idx] = 0
+percent_diff_r[best_r_idx] = 0
+
+# Plot the raw Pearson r values and the % change
+plt.figure(figsize=(10, 4.5))
+
+plt.subplot(1, 2, 1)
+plt.plot(C_values, r_overall_avg, marker='o', color='red')
+plt.xscale('log')
+plt.title("Pearson Correlation (Raw Values)", fontsize=15)
+plt.xlabel('C', fontsize=15)
+plt.ylabel("Pearson r", fontsize=15)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.grid(True)
+
+plt.subplot(1, 2, 2)
+plt.plot(C_values, percent_diff_r, marker='o', color='darkred')
+plt.axhline(y=-5, color='black', linestyle='--', linewidth=1.5, label='5% Threshold')
+plt.xscale('log')
+plt.title("Percent Change in Pearson Correlation", fontsize=15)
+plt.xlabel('C', fontsize=15)
+plt.ylabel("% Change", fontsize=15)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+#%% 
+#Training model and computing BAGs
+
+#Prepare storage for error and correlation analyses
 gap_north = np.zeros((n_splits,reps,vectorized_north.shape[1]))
 gap_south = np.zeros((n_splits,reps,vectorized_south.shape[1]))
 gap_AD = np.zeros((n_splits,reps,vectorized_AD.shape[1]))
 gap_FTD = np.zeros((n_splits,reps,vectorized_FTD.shape[1]))
 
-r_north = np.zeros((n_splits,reps))
-error_north = np.zeros((n_splits,reps,vectorized_north.shape[1]))
-r_south = np.zeros((n_splits,reps))
-error_south = np.zeros((n_splits,reps,vectorized_south.shape[1]))
-error_AD = np.zeros((n_splits,reps,vectorized_AD.shape[1]))
-error_FTD = np.zeros((n_splits,reps,vectorized_FTD.shape[1]))
 
 min_corr = 0.3  # Minimum correlation threshold
 
@@ -134,9 +250,10 @@ for k in range(0, reps):
     # Lists to store correlations and errors across folds
     rtemp_pool = []     
     error_pool = []
+    rmse_pool = []
     
     # Initialize Support Vector Regression model
-    regr = svm.SVR(max_iter=10000, C=2, kernel='poly', degree=2, epsilon=0.0001)
+    regr = svm.SVR(max_iter=10000, C = 2, kernel='poly', degree=2, epsilon=0.0001)
     
     # Perform K-Fold cross-validation
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=k)
@@ -164,10 +281,14 @@ for k in range(0, reps):
         gap_train = regr.predict(X_pool_train.T) - Y_train
         a, b = stats.linregress(Y_train, gap_train)[0:2]
         
+        # Correct the predictions for the age bias
+        Y_pred_corrected = Y_pred - (a * Y_test + b)
+        
         # Calculate error and correlation
         rtemp_pool.append(stats.pearsonr(Y_test, Y_pred)[0])  
-        error_pool.append(np.mean(np.abs(Y_pred - Y_test)))
-        
+        error_pool.append(np.mean(np.abs(Y_pred_corrected - Y_test)))
+        rmse_pool.append(np.sqrt(mean_squared_error(Y_pred_corrected, Y_test)))        
+
         # Test north
         X_north = vectorized_north[corr_vec_pool_idx, :]
         Y_pred_north = regr.predict(X_north.T)
@@ -200,11 +321,13 @@ for k in range(0, reps):
     
     rreps[k] = np.mean(rtemp_pool)
     e_reps[k] = np.mean(error_pool)
+    rmse_reps[k] = np.mean(rmse_pool)
     print(k)
 
 # Display mean results
 print(np.mean(rreps[:]))  # Average correlation
-print(np.mean(e_reps[:]))  # Average error
+print(np.mean(e_reps[:]))  # Average absolute error
+print(np.mean(rmse_reps[:]))  # Average root mean square error
 
 #average gaps across repetitions and folds
 gap_south = np.nanmean(np.nanmean(gap_south,0),0)
