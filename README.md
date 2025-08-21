@@ -2,11 +2,11 @@
 
 This repository contains code for simulations related to the studies:
 
-**"Viscous dynamics associated with hypoexcitation and structural disintegration in neurodegeneration via generative whole-brain modeling."**
+**"Viscous dynamics associated with hypoexcitation and structural disintegration in neurodegeneration via generative whole-brain modeling."** https://doi.org/10.1002/alz.13788
 
-**"Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia."**
+**"Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia."** https://pureportal.strath.ac.uk/en/publications/diversity-sensitive-brain-clocks-linked-to-biophysical-mechanisms
 
-**"A multi-frequency whole-brain neural mass model with homeostatic feedback inhibition."** [5]
+**"A multi-frequency whole-brain neural mass model with homeostatic feedback inhibition."** COMING SOON
 
 We utilize a modified version of the Jansen & Rit model [1], incorporating inhibitory synaptic plasticity [2] and contributions from alpha and gamma neural masses [3,4].
 
@@ -16,7 +16,6 @@ We utilize a modified version of the Jansen & Rit model [1], incorporating inhib
 2. Abeysuriya, R. G., Hadida, J., Sotiropoulos, S. N., Jbabdi, S., Becker, R., Hunt, B. A., ... & Woolrich, M. W. (2018). A biophysical model of dynamic balancing of excitation and inhibition in fast oscillatory large-scale networks. *PLoS Computational Biology, 14(2)*, e1006007.
 3. Otero, M., Lea-Carnall, C., Prado, P., Escobar, M. J., & El-Deredy, W. (2022). Modelling neural entrainment and its persistence: influence of frequency of stimulation and phase at the stimulus offset. *Biomedical Physics & Engineering Express, 8(4)*, 045014.
 4. Coronel-Oliveros, C., et al. (2025). Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia. *Nature Mental Health*.
-5. COMING SOON.
 
 ## Folder Structure
 
