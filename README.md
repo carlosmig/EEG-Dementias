@@ -6,6 +6,8 @@ This repository contains code for simulations related to the studies:
 
 **"Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia."**
 
+**"A multi-frequency whole-brain neural mass model with homeostatic feedback inhibition.""**
+
 We utilize a modified version of the Jansen & Rit model [1], incorporating inhibitory synaptic plasticity [2] and contributions from alpha and gamma neural masses [3].
 
 ## References
@@ -22,6 +24,7 @@ We utilize a modified version of the Jansen & Rit model [1], incorporating inhib
 - **`SVM and FC matrices`** : Implementation of SVM models and brain age gap estimation using functional connectivity.
 - **`JR model and running example`** : Guide to running a Jansen-Rit EEG simulation.
 - **`JR Model Tutorial`** : Basic tutorial on using and understanding the Jansen-Rit model.
+- **`JR ReDLat + Sleep`** : Codes related to A multi-frequency whole-brain neural mass model with homeostatic feedback inhibition. Data and codes for reproducing some of the main results.
 
 ## License
 
