@@ -6,6 +6,7 @@ B) Noise-free single-node simulations (r_alpha = 0.5):
    target firing rate (ρ) vs. time-averaged simulated firing rate
 C) Same setup:
    target firing rate (ρ) vs. time-averaged feedback inhibition (C4)
+D-F) Slow and Fast limit cycles
 
 Notes
 - The Jansen–Rit multi-population model is configured for one node (JR.M = [[0]]).
@@ -243,4 +244,150 @@ plt.tight_layout()
 plt.show()
 
 plt.rcdefaults()
+
+
+#%% 
+
+# 6) NOISE-FREE single-node: peak frequency vs p for r_alpha = 0 and 1
+
+
+# Ensure single node / no coupling
+JR.M = np.array([[0]])
+JR.nnodes = len(JR.M)
+nnodes = JR.nnodes
+
+
+# No plasticity, no noise
+JR.plasticity_on = 0
+JR.sigma = 0.0
+JR.target = 2.5 * np.ones(nnodes)
+JR.update()
+
+# Sweep p
+p_sweep = np.linspace(0, 500, 51) 
+
+# Welch params
+fs = 1000 // JR.downsamp
+nperseg = 4000 // JR.downsamp
+noverlap = 2000 // JR.downsamp
+
+# Store peak frequencies
+peakfreq_a0 = np.zeros(len(p_sweep))  # r_alpha = 0 (pure gamma subpopulation)
+peakfreq_a1 = np.zeros(len(p_sweep))  # r_alpha = 1 (pure alpha subpopulation)
+
+# Example p values for time-series plots
+p_examples = [120.0, 300.0]
+
+# Store 1-second EEG time series for examples:
+# dict keys: p value -> (t_1s, eeg_1s)
+eeg1s_ra0 = {}
+eeg1s_ra1 = {}
+
+# Simulations
+for i, p_in in enumerate(p_sweep):
+    JR.p = float(p_in) * np.ones(nnodes)
+
+    # ---- r_alpha = 0 ----
+    JR.alpha = 0.0 * np.ones(nnodes)
+    JR.gamma = 1.0 - JR.alpha
+    y, t = JR.Sim(verbose=False)
+    eeg = (JR.alpha * y[:, 1, :] + JR.gamma * y[:, 7, :]) - (JR.alpha * y[:, 2, :] + JR.gamma * y[:, 8, :])
+    
+    # remove initial transient (use teq seconds)
+    mask = t >= JR.teq
+    eeg_ss = eeg[mask, :]
+
+    freqs, PSDs = signal.welch(
+        eeg_ss, fs=fs, window='hann',
+        nperseg=nperseg, noverlap=noverlap,
+        axis=0, scaling='density'
+    )
+    PSD = np.mean(PSDs, axis=1).ravel()
+    
+    # Peak frequency
+    pk_idx = np.argmax(PSD[1:]) + 1
+    peakfreq_a0[i] = freqs[pk_idx]
+
+
+    # Store 1-second example time series after transient
+    if np.any(np.isclose(p_in, p_examples, atol=1e-9)):
+        t_ss = t[mask]
+        # take first 1 second of steady-state segment (or as much as available)
+        t0 = t_ss[0]
+        m1s = t_ss <= (t0 + 1.0)
+        eeg1s_ra0[float(p_in)] = (t_ss[m1s] - t0, eeg_ss[m1s, 0])  # node 0
+
+    # ---- r_alpha = 1 ----
+    JR.alpha = 1.0 * np.ones(nnodes)
+    JR.gamma = 1.0 - JR.alpha
+    y, t = JR.Sim(verbose=False)
+    eeg = (JR.alpha * y[:, 1, :] + JR.gamma * y[:, 7, :]) - (JR.alpha * y[:, 2, :] + JR.gamma * y[:, 8, :])
+
+    mask = t >= JR.teq
+    eeg_ss = eeg[mask, :]
+
+    freqs, PSDs = signal.welch(
+        eeg_ss, fs=fs, window='hann',
+        nperseg=nperseg, noverlap=noverlap,
+        axis=0, scaling='density'
+    )
+    PSD = np.mean(PSDs, axis=1).ravel()
+    pk_idx = np.argmax(PSD[1:]) + 1
+    peakfreq_a1[i] = freqs[pk_idx]
+    
+    # Store 1-second example time series after transient
+    if np.any(np.isclose(p_in, p_examples, atol=1e-9)):
+        t_ss = t[mask]
+        t0 = t_ss[0]
+        m1s = t_ss <= (t0 + 1.0)
+        eeg1s_ra1[float(p_in)] = (t_ss[m1s] - t0, eeg_ss[m1s, 0])  # node 0
+
+    if (i % 10) == 0:
+        print(f"p={p_in:.1f} -> f_peak(r_alpha=0)={peakfreq_a0[i]:.2f} Hz, f_peak(r_alpha=1)={peakfreq_a1[i]:.2f} Hz")
+
+#%%
+
+# Plot
+plt.rcParams["svg.fonttype"] = "none"
+
+plt.figure(figsize=(7, 5))
+plt.plot(p_sweep, peakfreq_a0, marker='o', markersize=3, linewidth=1.5, label=r"$r^{\alpha}=0$")
+plt.plot(p_sweep, peakfreq_a1, marker='o', markersize=3, linewidth=1.5, label=r"$r^{\alpha}=1$")
+plt.xlabel("External input p")
+plt.ylabel("Peak frequency (Hz)")
+plt.title("Noise-free single-node: peak oscillation frequency vs p")
+for pv in p_examples:
+    plt.axvline(pv, linestyle='--', linewidth=1.5)
+plt.grid(True)
+plt.legend(frameon=False)
+plt.tight_layout()
+plt.show()
+
+# r_alpha = 0 time series
+plt.figure(figsize=(7, 4))
+for pv in p_examples:
+    if pv in eeg1s_ra0:
+        tt, xx = eeg1s_ra0[pv]
+        plt.plot(tt, xx, linewidth=1.5, label=f"p = {pv:g}")
+plt.xlabel("Time (s)")
+plt.ylabel("EEG (a.u.)")
+plt.title(r"Noise-free single-node EEG (1 s) — $r^{\alpha}=0$")
+plt.grid(True)
+plt.legend(frameon=False)
+plt.tight_layout()
+plt.show()
+
+# r_alpha = 1 time series
+plt.figure(figsize=(7, 4))
+for pv in p_examples:
+    if pv in eeg1s_ra1:
+        tt, xx = eeg1s_ra1[pv]
+        plt.plot(tt, xx, linewidth=1.5, label=f"p = {pv:g}")
+plt.xlabel("Time (s)")
+plt.ylabel("EEG (a.u.)")
+plt.title(r"Noise-free single-node EEG (1 s) — $r^{\alpha}=1$")
+plt.grid(True)
+plt.legend(frameon=False)
+plt.tight_layout()
+plt.show()
 
