@@ -10,6 +10,8 @@ This repository contains code for simulations related to the studies:
 
 We utilize a modified version of the Jansen & Rit model [1], incorporating inhibitory synaptic plasticity [2] and contributions from alpha and gamma neural masses [3,4,5].
 
+Source-localized EEG time series (JR + Sleep) can be found at: https://zenodo.org/records/18841259.
+
 ## References
 
 1. Jansen, B. H., & Rit, V. G. (1995). Electroencephalogram and visual evoked potential generation in a mathematical model of coupled cortical columns. *Biological Cybernetics, 73(4)*, 357-366.
