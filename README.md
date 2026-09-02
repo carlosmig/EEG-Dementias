@@ -18,7 +18,7 @@ Source-localized EEG time series (JR + Sleep) can be found at: https://zenodo.or
 2. Abeysuriya, R. G., Hadida, J., Sotiropoulos, S. N., Jbabdi, S., Becker, R., Hunt, B. A., ... & Woolrich, M. W. (2018). A biophysical model of dynamic balancing of excitation and inhibition in fast oscillatory large-scale networks. *PLoS Computational Biology, 14(2)*, e1006007.
 3. Otero, M., Lea-Carnall, C., Prado, P., Escobar, M. J., & El-Deredy, W. (2022). Modelling neural entrainment and its persistence: influence of frequency of stimulation and phase at the stimulus offset. *Biomedical Physics & Engineering Express, 8(4)*, 045014.
 4. Coronel-Oliveros, C., et al. (2025). Diversity-sensitive brain clocks linked to biophysical mechanisms in aging and dementia. *Nature Mental Health*.
-5. UNDER CONSTRUCTION.
+5. Coronel-Oliveros, C., Lehue, F., Herzog, R., Mindlin, I., Gatica, M., Kowalczyk-Grębska, N., ... & Ibáñez, A. (2026). A multi-frequency whole-brain neural mass model with homeostatic feedback inhibition. PLoS computational biology, 22(5), e1013463.
 
 ## Folder Structure
 
